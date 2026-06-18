@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thiên Kim · OOTD Pipeline</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--card:#12121e;--card2:#1a1a2a;--border:#252538;--accent:#d4a574;--accent2:#e8c9a0;--text:#e0e0e0;--muted:#888;--green:#4ade80;--red:#f87171;--blue:#60a5fa;--yellow:#fbbf24;--purple:#c4b5fd;--radius:10px}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+button{cursor:pointer;border:none;font-family:inherit;font-size:14px}
+input,textarea,select{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:var(--radius);font-size:14px;font-family:inherit;transition:.2s}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px}
+
+/* Header */
+.header{background:linear-gradient(135deg,#13132a 0%,#1a1035 100%);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tag{font-size:10px;background:var(--accent);color:#000;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.5px}
+.header nav{margin-left:auto;display:flex;gap:6px}
+.nav-btn{background:none;color:var(--muted);padding:8px 14px;border-radius:8px;font-weight:500;transition:.2s}
+.nav-btn:hover,.nav-btn.active{color:var(--text);background:rgba(255,255,255,.06)}
+
+.container{max-width:900px;margin:0 auto;padding:24px 16px}
+
+/* Buttons */
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#000}.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text)}.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--red)}.btn-danger:hover{background:rgba(248,113,113,.25)}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card h2{font-size:16px;font-weight:700;color:var(--accent2);margin-bottom:14px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:10px}
+label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block;font-weight:500}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Steps wizard */
+.steps-bar{display:flex;gap:4px;margin-bottom:24px;padding:4px;background:var(--card);border-radius:12px;border:1px solid var(--border)}
+.step-pill{flex:1;text-align:center;padding:10px 8px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);transition:.2s;position:relative}
+.step-pill.active{background:var(--accent);color:#000}
+.step-pill.done{background:rgba(74,222,128,.12);color:var(--green)}
+.step-pill .step-num{display:block;font-size:16px;font-weight:800;margin-bottom:2px}
+
+/* Decision / Storyboard review */
+.review-block{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.review-block .label{font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.review-block .value{font-size:14px}
+.reasoning{font-style:italic;color:var(--muted);font-size:13px;line-height:1.6;border-left:3px solid var(--accent);padding-left:12px;margin:8px 0}
+
+/* Scene cards */
+.scene-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr;gap:12px}
+.scene-num{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent);color:#000;font-weight:800;font-size:14px;flex-shrink:0}
+.scene-info .scene-subject{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.scene-info .scene-subject.tk{color:var(--accent)}
+.scene-info .scene-subject.env{color:var(--blue)}
+.scene-info .scene-subject.face{color:var(--purple)}
+.scene-desc{font-size:13px;color:var(--text);margin-bottom:6px;line-height:1.5}
+.scene-meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+
+/* QC badge */
+.qc-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600}
+.qc-pass{background:rgba(74,222,128,.12);color:var(--green)}
+.qc-fail{background:rgba(248,113,113,.12);color:var(--red)}
+
+/* Prompt cards */
+.prompt-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.prompt-head{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.prompt-head h4{font-size:13px;font-weight:600;flex:1}
+.prompt-body{padding:14px}
+.prompt-text{font-size:12px;line-height:1.6;color:var(--muted);background:var(--card);padding:10px;border-radius:6px;max-height:100px;overflow-y:auto;word-break:break-word;margin-bottom:8px}
+.prompt-label{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px}
+
+/* Pack list */
+.pack-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:14px}
+.pack-item:hover{border-color:var(--accent);transform:translateY(-1px)}
+.pack-item .title{font-weight:600;flex:1}
+.pack-item .meta{font-size:12px;color:var(--muted)}
+.status{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.s-draft{background:#333;color:#aaa}
+.s-images_ready,.s-image_ready{background:#16653440;color:var(--green)}
+.s-awaiting_video{background:#92400e40;color:var(--yellow)}
+.s-videos_ready{background:#1e40af40;color:var(--blue)}
+.s-publish_ready{background:#7c3aed40;color:var(--purple)}
+.s-generating_images{background:#854d0e40;color:var(--yellow)}
+
+/* Shot grid (detail view) */
+.shots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:14px}
+.shot-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.shot-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.shot-head h4{font-size:13px;font-weight:600}
+.shot-body{padding:14px;font-size:13px}
+.shot-upload{padding:12px 14px;border-top:1px solid var(--border)}
+.shot-upload input{font-size:12px;margin-bottom:6px}
+
+/* Publish */
+.pub-field{margin-bottom:14px}
+.pub-field label{font-size:11px;color:var(--accent);font-weight:700}
+.pub-field p{margin-top:4px;font-size:14px;white-space:pre-wrap}
+
+/* Loading & toast */
+.loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:60px;color:var(--muted)}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:200;animation:slideUp .3s;max-width:400px}
+.toast-ok{background:var(--green);color:#000}
+.toast-err{background:var(--red);color:#fff}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}}
+
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+
+@media(max-width:640px){.form-grid{grid-template-columns:1fr}.shots-grid{grid-template-columns:1fr}.steps-bar{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">Thien Kim</span>
+  <span class="tag">OOTD</span>
+  <nav>
+    <button class="nav-btn active" onclick="nav('list')" id="nav-list">Packs</button>
+    <button class="nav-btn" onclick="nav('create')" id="nav-create">+ Tao moi</button>
+  </nav>
+</div>
+
+<div class="container" id="app"></div>
+
+<script>
+const API = 'https://thienkim.phamnhathaidang.workers.dev';
+let state = { view:'list', brief:{}, decision:null, storyboard:null, qc:null, pack:null, shots:null, logs:[], step:0 };
+
+function $(id){return document.getElementById(id)}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function toast(msg,ok=true){const el=document.createElement('div');el.className='toast '+(ok?'toast-ok':'toast-err');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),3500)}
+async function api(path,opts){
+  const res=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts,body:opts?.body?JSON.stringify(opts.body):undefined});
+  return res.json();
+}
+function nav(view){state.view=view;state.step=0;state.decision=null;state.storyboard=null;state.pack=null;state.shots=null;state.logs=[];
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const n=$('nav-'+view);if(n)n.classList.add('active');
+  render();
+}
+function render(){
+  if(state.view==='list')renderList();
+  else if(state.view==='create')renderWizard();
+  else if(state.view==='detail')renderDetail();
+}
+
+// ── Pack List ──
+async function renderList(){
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Dang tai...</div></div>';
+  const res=await api('/api/packs');
+  const packs=res.packs||[];
+  if(!packs.length){$('app').innerHTML='<div class="empty"><p style="font-size:18px;margin-bottom:8px">Chua co pack nao</p><p style="margin-bottom:16px">Bat dau tao OOTD dau tien</p><button class="btn btn-primary" onclick="nav(\'create\')">+ Tao pack moi</button></div>';return}
+  $('app').innerHTML=packs.map(p=>`
+    <div class="pack-item" onclick="openPack('${p.pack_id}')">
+      <div class="title">${esc(p.trend_title)}</div>
+      <div class="meta">${p.expected_stage_count} scenes · ${timeAgo(p.created_at)}</div>
+      <span class="status s-${p.status}">${p.status.replace(/_/g,' ')}</span>
+    </div>`).join('');
+}
+
+// ── Wizard (Step-by-step ToonFlow) ──
+function renderWizard(){
+  const steps=['Brief','Decision','Storyboard','Prompts','Luu'];
+  const s=state.step;
+  let html=`<div class="steps-bar">${steps.map((name,i)=>`
+    <div class="step-pill ${i===s?'active':i<s?'done':''}"><span class="step-num">${i+1}</span>${name}</div>`).join('')}</div>`;
+  if(s===0)html+=wizardBrief();
+  else if(s===1)html+=wizardDecision();
+  else if(s===2)html+=wizardStoryboard();
+  else if(s===3)html+=wizardPrompts();
+  else if(s===4)html+=wizardSave();
+  $('app').innerHTML=html;
+}
+
+function wizardBrief(){
+  const b=state.brief;
+  return `<div class="card"><h2>Buoc 1 · Nhap y tuong</h2>
+    <div style="margin-bottom:12px"><label>Notes / Y tuong chinh *</label><textarea id="f-notes" placeholder="vd: casual summer ootd, linen pants + crop top, rooftop cafe Saigon">${esc(b.notes||'')}</textarea></div>
+    <div class="form-grid">
+      <div><label>Niche</label><input id="f-niche" placeholder="casual fashion, streetwear..." value="${esc(b.niche||'')}"></div>
+      <div><label>Mood</label><input id="f-mood" placeholder="warm golden hour, cool night..." value="${esc(b.mood||'')}"></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px">
+      <div><label>So scene (3-6)</label><input id="f-stages" type="number" value="${b.stage_count||4}" min="3" max="6"></div>
+      <div><label>Footwear</label><input id="f-footwear" placeholder="de trong = beige flat sandals" value="${esc(b.footwear_override||'')}"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="submitBrief()">Tiep theo → AI phan tich</button></div>
+  </div>`;
+}
+
+async function submitBrief(){
+  state.brief={notes:$('f-notes').value,niche:$('f-niche').value,mood:$('f-mood').value,
+    stage_count:parseInt($('f-stages').value)||4,footwear_override:$('f-footwear').value,country:'VN'};
+  if(!state.brief.notes.trim()){toast('Nhap y tuong truoc',false);return}
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">AI dang suy nghi ve creative direction...</div></div>';
+  try{
+    const res=await api('/api/step/decide',{method:'POST',body:state.brief});
+    if(!res.ok)throw new Error(res.error);
+    state.decision=res.decision;state.logs=[res.log];state.step=1;renderWizard();
+  }catch(e){toast(e.message,false);state.step=0;renderWizard()}
+}
+
+function wizardDecision(){
+  const d=state.decision;
+  return `<div class="card"><h2>Buoc 2 · AI da phan tich — Ban review</h2>
+    <div class="reasoning">${esc(d.reasoning)}</div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="review-block"><div class="label">Content Type</div><div class="value">${esc(d.content_type)}</div></div>
+      <div class="review-block"><div class="label">Story Pattern</div><div class="value">${esc(d.story_pattern)}</div></div>
+      <div class="review-block"><div class="label">Visual Anchor</div><div class="value">${esc(d.visual_anchor)}</div></div>
+      <div class="review-block"><div class="label">Editing Style</div><div class="value">${esc(d.editing_style)}</div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="approveDecision()">Dong y → Tao Storyboard</button>
+      <button class="btn btn-ghost" onclick="retryDecision()">Lam lai</button>
+      <button class="btn btn-danger" onclick="state.step=0;renderWizard()">← Quay lai</button>
+    </div>
+  </div>`;
+}
+
+async function approveDecision(){
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">AI dang tao storyboard + QC kiem tra...</div></div>';
+  try{
+    const res=await api('/api/step/storyboard',{method:'POST',body:{...state.brief,decision:state.decision}});
+    if(!res.ok)throw new Error(res.error);
+    state.storyboard=res.storyboard;state.qc=res.qc;state.logs.push(...(res.logs||[]));state.step=2;renderWizard();
+  }catch(e){toast(e.message,false);state.step=1;renderWizard()}
+}
+
+async function retryDecision(){
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">AI dang suy nghi lai...</div></div>';
+  try{
+    const res=await api('/api/step/decide',{method:'POST',body:state.brief});
+    if(!res.ok)throw new Error(res.error);
+    state.decision=res.decision;renderWizard();toast('Da tao decision moi');
+  }catch(e){toast(e.message,false);renderWizard()}
+}
+
+function wizardStoryboard(){
+  const sb=state.storyboard;const qc=state.qc;
+  const totalDur=sb.scenes.reduce((sum,s)=>sum+parseInt(s.duration)||0,0);
+  const subjectColors={thien_kim:'tk',thien_kim_face:'face',object_environment:'env',product:'env',fantasy:'face'};
+  return `<div class="card"><h2>Buoc 3 · Storyboard — Ban review tung scene</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <span class="qc-badge ${qc.pass?'qc-pass':'qc-fail'}">${qc.pass?'✓ QC Pass':'✗ QC Fail'} · ${qc.score}/100</span>
+      <span style="font-size:13px;color:var(--muted)">${sb.scenes.length} scenes · ${totalDur}s tong</span>
+    </div>
+    ${qc.issues?.length?`<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px;margin-bottom:14px;font-size:13px;color:var(--red)"><strong>QC Issues:</strong> ${qc.issues.map(i=>'<br>• '+esc(i)).join('')}</div>`:''}
+    ${sb.scenes.map((s,i)=>`<div class="scene-card">
+      <div class="scene-num">${i+1}</div>
+      <div class="scene-info">
+        <div class="scene-subject ${subjectColors[s.subject]||''}">${s.subject} · ${s.duration}</div>
+        <div class="scene-desc">${esc(s.description)}</div>
+        <div class="scene-meta">
+          <span>📷 ${esc(s.camera)}</span>
+          <span>🎬 ${esc(s.motion_prompt)}</span>
+          <span>↗ ${esc(s.transition_out)}</span>
+        </div>
+      </div>
+    </div>`).join('')}
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="approveStoryboard()">Dong y → Tao Prompts</button>
+      <button class="btn btn-ghost" onclick="retryStoryboard()">Tao lai storyboard</button>
+      <button class="btn btn-danger" onclick="state.step=1;renderWizard()">← Quay lai Decision</button>
+    </div>
+  </div>`;
+}
+
+async function approveStoryboard(){
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Dang build image + video prompts...</div></div>';
+  try{
+    const res=await api('/api/step/prompts',{method:'POST',body:{...state.brief,storyboard:state.storyboard}});
+    if(!res.ok)throw new Error(res.error);
+    state.pack=res.pack;state.shots=res.shots;state.step=3;renderWizard();
+  }catch(e){toast(e.message,false);state.step=2;renderWizard()}
+}
+
+async function retryStoryboard(){
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">AI dang tao lai storyboard...</div></div>';
+  try{
+    const res=await api('/api/step/storyboard',{method:'POST',body:{...state.brief,decision:state.decision}});
+    if(!res.ok)throw new Error(res.error);
+    state.storyboard=res.storyboard;state.qc=res.qc;renderWizard();toast('Da tao storyboard moi');
+  }catch(e){toast(e.message,false);renderWizard()}
+}
+
+function wizardPrompts(){
+  const shots=state.shots||[];
+  return `<div class="card"><h2>Buoc 4 · Review Prompts</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Kiem tra image prompt (EN) va video prompt (CN) cho tung shot. Day la noi dung se gui den AI gen anh va RunningHub gen video.</p>
+    ${shots.map(s=>{
+      const scene=JSON.parse(s.scene_json||'{}');
+      return `<div class="prompt-card">
+        <div class="prompt-head">
+          <h4>Shot ${s.shot_number} · ${scene.subject||''} · ${s.duration}</h4>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:${s.face_drift_risk==='medium'?'rgba(251,191,36,.15);color:var(--yellow)':s.face_drift_risk==='low'?'rgba(74,222,128,.1);color:var(--green)':'rgba(255,255,255,.05);color:var(--muted)'}">${s.face_drift_risk} drift</span>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-label">Image Prompt (EN)</div>
+          <div class="prompt-text">${esc(s.image_prompt)}</div>
+          <div class="prompt-label">Video Prompt (CN) — cho RunningHub</div>
+          <div class="prompt-text">${esc(s.video_prompt_cn)}</div>
+        </div>
+      </div>`}).join('')}
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="confirmSave()">Xac nhan → Luu Pack</button>
+      <button class="btn btn-danger" onclick="state.step=2;renderWizard()">← Quay lai Storyboard</button>
+    </div>
+  </div>`;
+}
+
+async function confirmSave(){
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Dang luu vao database...</div></div>';
+  try{
+    const res=await api('/api/step/save',{method:'POST',body:{pack:state.pack,shots:state.shots,logs:state.logs}});
+    if(!res.ok)throw new Error(res.error);
+    state.step=4;renderWizard();
+  }catch(e){toast(e.message,false);state.step=3;renderWizard()}
+}
+
+function wizardSave(){
+  const p=state.pack;
+  return `<div class="card" style="text-align:center;padding:40px">
+    <div style="font-size:48px;margin-bottom:12px">✓</div>
+    <h2 style="color:var(--green);font-size:20px;margin-bottom:8px">Pack da luu thanh cong!</h2>
+    <p style="color:var(--muted);margin-bottom:4px">${esc(p.pack_id)}</p>
+    <p style="font-size:18px;font-weight:700;margin-bottom:20px">${esc(p.trend_title)}</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-primary" onclick="openPack('${p.pack_id}')">Xem Pack → Tiep tuc</button>
+      <button class="btn btn-ghost" onclick="nav('create')">Tao pack moi</button>
+    </div>
+  </div>`;
+}
+
+// ── Pack Detail ──
+async function openPack(packId){
+  state.view='detail';state.currentPackId=packId;render();
+}
+async function renderDetail(){
+  const packId=state.currentPackId;
+  $('app').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Dang tai...</div></div>';
+  const res=await api('/api/packs/'+packId);
+  if(!res.ok){toast(res.error,false);nav('list');return}
+  const p=res.pack;const shots=res.shots||[];
+  let html=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="nav('list')">← Quay lai</button>
+      <h2 style="font-size:18px;font-weight:700;color:var(--accent2);flex:1">${esc(p.trend_title)}</h2>
+      <span class="status s-${p.status}">${p.status.replace(/_/g,' ')}</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:var(--muted)">
+      <span style="background:var(--card);padding:4px 10px;border-radius:6px">${p.pack_id}</span>
+      <span style="background:var(--card);padding:4px 10px;border-radius:6px">${p.content_type}</span>
+      <span style="background:var(--card);padding:4px 10px;border-radius:6px">${p.story_pattern}</span>
+      <span style="background:var(--card);padding:4px 10px;border-radius:6px">${p.editing_style}</span>
+      <span style="background:var(--card);padding:4px 10px;border-radius:6px">Anchor: ${esc(p.visual_anchor||'')}</span>
+    </div>
+    <div class="btn-row" style="margin-bottom:20px">
+      <button class="btn btn-primary btn-sm" onclick="genPublish('${packId}')">Gen Caption & Hashtags</button>
+      <button class="btn btn-ghost btn-sm" onclick="uploadAll('${packId}')">Upload tat ca video</button>
+    </div>`;
+
+  if(p.caption){
+    html+=`<div class="card"><h3>Publish Metadata</h3>
+      <div class="pub-field"><label>Hook</label><p>${esc(p.hook||'')}</p></div>
+      <div class="pub-field"><label>Cover</label><p>${esc(p.cover_text||'')}</p></div>
+      <div class="pub-field"><label>Caption</label><p>${esc(p.caption)}</p></div>
+      <div class="pub-field"><label>Hashtags</label><p>${esc(p.hashtags||'')}</p></div>
+    </div>`;
+  }
+
+  html+='<h3 style="font-size:14px;color:var(--accent2);margin-bottom:8px">Shots</h3><div class="shots-grid">';
+  for(const s of shots){
+    const scene=s.scene_json?JSON.parse(s.scene_json):{};
+    html+=`<div class="shot-card">
+      <div class="shot-head"><h4>Shot ${s.shot_number} · ${s.duration}</h4><span class="status s-${s.status}">${(s.status||'').replace(/_/g,' ')}</span></div>
+      ${s.first_frame_url&&!s.first_frame_url.startsWith('data:')?`<img src="${s.first_frame_url}" style="width:100%;aspect-ratio:9/16;object-fit:cover">`:''}
+      ${s.video_url?`<video src="${s.video_url}" controls style="width:100%;aspect-ratio:9/16;object-fit:cover"></video>`:''}
+      <div class="shot-body">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px">${esc(scene.subject||'')} · ${esc(scene.camera||'')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${esc(scene.description||'')}</div>
+        <div class="prompt-label">Image Prompt</div>
+        <div class="prompt-text">${esc(s.image_prompt||'')}</div>
+        <div class="prompt-label">Video Prompt (CN)</div>
+        <div class="prompt-text">${esc(s.video_prompt_cn||'')}</div>
+      </div>
+      <div class="shot-upload">
+        <input id="vid-${s.shot_number}" placeholder="Video URL tu RunningHub..." value="${s.video_url||''}">
+        <button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="uploadOne('${packId}',${s.shot_number})">Upload</button>
+      </div>
+    </div>`;
+  }
+  html+='</div>';
+  $('app').innerHTML=html;
+}
+
+async function uploadOne(packId,n){
+  const url=$('vid-'+n)?.value?.trim();
+  if(!url){toast('Nhap URL truoc',false);return}
+  const res=await api('/api/video/'+packId,{method:'POST',body:{shots:[{shot_number:n,video_url:url}]}});
+  if(res.ok)toast('Upload shot '+n+' thanh cong');else toast(res.error,false);
+  renderDetail();
+}
+async function uploadAll(packId){
+  const entries=[];
+  document.querySelectorAll('[id^="vid-"]').forEach(inp=>{
+    const n=parseInt(inp.id.replace('vid-',''));
+    if(inp.value.trim())entries.push({shot_number:n,video_url:inp.value.trim()});
+  });
+  if(!entries.length){toast('Nhap it nhat 1 URL',false);return}
+  const res=await api('/api/video/'+packId,{method:'POST',body:{shots:entries}});
+  if(res.ok)toast('Upload '+entries.length+' video OK');else toast(res.error,false);
+  renderDetail();
+}
+async function genPublish(packId){
+  toast('Dang gen caption...');
+  const res=await api('/api/publish/'+packId,{method:'POST'});
+  if(res.ok)toast('Gen caption thanh cong!');else toast(res.error,false);
+  renderDetail();
+}
+
+function timeAgo(iso){
+  if(!iso)return '';
+  const m=Math.floor((Date.now()-new Date(iso).getTime())/60000);
+  if(m<60)return m+' phut truoc';
+  const h=Math.floor(m/60);if(h<24)return h+' gio truoc';
+  return Math.floor(h/24)+' ngay truoc';
+}
+
+render();
+</script>
+</body>
+</html>
