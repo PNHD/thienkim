@@ -5,7 +5,7 @@ import { runScoutAgent, stepDecide, stepStoryboard, stepBuildPrompts } from './a
 import { dashboardHTML } from './ui';
 import { runImageAgent } from './agents/image';
 import { runPublishAgent } from './agents/publish';
-import { savePack, saveShots, saveAgentLogs, getPack, getShots, listPacks, updateShotImage, updatePackStatus, getShotsByStatus, updateShotVideo, updatePackPublish } from './db/queries';
+import { savePack, saveShots, saveAgentLogs, getPack, getShots, listPacks, updateShotImage, updatePackStatus, getShotsByStatus, updateShotVideo, updatePackPublish, deletePack } from './db/queries';
 
 type HonoEnv = { Bindings: Env };
 const app = new Hono<HonoEnv>();
@@ -329,6 +329,51 @@ app.post('/api/pipeline', async (c) => {
     });
   } catch (err: any) {
     return c.json({ ok: false, steps_completed: steps, error: err.message }, 500);
+  }
+});
+
+// ── Delete Pack ──
+app.delete('/api/packs/:packId', async (c) => {
+  const packId = c.req.param('packId');
+  const pack = await getPack(c.env.DB, packId);
+  if (!pack) return c.json({ ok: false, error: 'Pack not found' }, 404);
+  try {
+    await deletePack(c.env.DB, packId);
+    return c.json({ ok: true, deleted: packId });
+  } catch (err: any) {
+    return c.json({ ok: false, error: err.message }, 500);
+  }
+});
+
+// ── Generate Idea (DeepSeek) ──
+app.post('/api/generate-idea', async (c) => {
+  const body = await c.req.json();
+  const { niche, mood, country } = body;
+  try {
+    const { callDeepSeek } = await import('./lib/llm');
+    const res = await callDeepSeek(c.env.DEEPSEEK_API_KEY, [
+      { role: 'user', content: `Bạn là creative director cho Thiên Kim — một nhà sáng tạo nội dung thời trang/lifestyle người Việt ở Sài Gòn.
+
+Hãy đề xuất MỘT ý tưởng video OOTD/fashion ngắn (15-30 giây) cho TikTok/Reels.
+
+Thông tin:
+- Niche: ${niche || 'thời trang đường phố / casual'}
+- Mood: ${mood || 'tự nhiên, thoải mái'}
+- Thị trường: ${country || 'VN'}
+
+Trả về JSON (không markdown):
+{
+  "notes": "mô tả ý tưởng chi tiết bằng tiếng Anh (2-3 câu, đủ cụ thể để tạo storyboard)",
+  "niche": "niche ngắn gọn bằng tiếng Anh",
+  "mood": "mood ngắn gọn bằng tiếng Anh",
+  "title_vi": "tên ý tưởng ngắn bằng tiếng Việt có dấu"
+}` },
+    ], { temperature: 0.9 });
+    const { extractJSON } = await import('./lib/llm');
+    const idea = extractJSON<{ notes: string; niche: string; mood: string; title_vi: string }>(res.text);
+    return c.json({ ok: true, idea });
+  } catch (err: any) {
+    return c.json({ ok: false, error: err.message }, 500);
   }
 });
 

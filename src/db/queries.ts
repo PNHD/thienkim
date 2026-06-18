@@ -109,6 +109,17 @@ export async function updateShotVideo(
   ).run();
 }
 
+export async function deletePack(db: D1Database, packId: string) {
+  await db.prepare('DELETE FROM agent_logs WHERE pack_id = ?').bind(packId).run();
+  await db.prepare('DELETE FROM shots WHERE pack_id = ?').bind(packId).run();
+  const pack = await db.prepare('SELECT idea_id FROM packs WHERE pack_id = ?').bind(packId).first<{ idea_id: string }>();
+  await db.prepare('DELETE FROM packs WHERE pack_id = ?').bind(packId).run();
+  if (pack?.idea_id) {
+    const remaining = await db.prepare('SELECT 1 FROM packs WHERE idea_id = ? LIMIT 1').bind(pack.idea_id).first();
+    if (!remaining) await db.prepare('DELETE FROM ideas WHERE idea_id = ?').bind(pack.idea_id).run();
+  }
+}
+
 export async function updatePackPublish(
   db: D1Database,
   packId: string,
