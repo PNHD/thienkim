@@ -1,24 +1,31 @@
-# Thiên Kim — tk-pipeline (project guide for AI agents)
+# Thiên Kim Pipeline — agent guide
 
-**This repo is ONLY the Thiên Kim pipeline app** (Cloudflare Worker: Hono + D1).
-- Cloudflare Worker name: `thienkim` (see `wrangler.toml`); D1 db `tk-pipeline-db`.
-- Intended live site: https://thienkim.pages.dev/ (set up its own GitHub repo + Cloudflare project).
-- Deploy the worker with `npm run deploy` (wrangler). DB: `npm run db:init:remote`.
+This repository contains only the Thiên Kim content-pipeline application (Cloudflare Worker + Hono + D1).
 
-## Project boundary — do NOT mix projects
-A separate, unrelated project — **WWM Calc** ("Where Winds Meet" calculator) — lives in `D:\WWM Calc` with repo `PNHD/wwm-calc` and site wonton-wwm.pages.dev. **Never bring WWM Calc code here, and never add Thiên Kim code into the WWM repo.** This `tk-pipeline` folder was previously sitting inside `D:\WWM Calc` by mistake and has been moved here.
+## Project boundary
 
-## LOCKED DECISIONS — do not revert
-1. **UI toàn bộ tiếng Việt có dấu** (2026-06-18). KHÔNG chuyển lại tiếng không dấu hay tiếng Anh.
-2. **Step-by-step wizard** (4 bước: decide → storyboard → prompts → save). KHÔNG quay lại one-shot `/api/scout` cho UI.
-3. **Nút Xóa Pack** có confirm dialog. KHÔNG xóa tính năng này.
-4. **Nút "Tạo ý tưởng AI"** gọi `/api/generate-idea`. Không bắt buộc nhập ý tưởng — user có thể generate.
+Keep this codebase independent from unrelated projects. Do not import files, data, deployment settings, or implementation assumptions from other repositories unless the task explicitly requires it.
 
-## Secrets (wrangler)
-- `DEEPSEEK_API_KEY` — dùng cho scout agent, publish agent, generate idea
-- `GEMINI_API_KEY` — dùng cho image gen (Imagen) + vision QC
-- Set bằng: `echo <value> | npx wrangler secret put <NAME> --name thienkim`
+## Product decisions
 
-## Notes
-- The wider `D:\Thiên Kim` folder holds media/content assets (videos, images, n8n workflows, planner JSON). Those are NOT part of this code repo and should stay out of git (kept un-versioned).
-- Requires `@cloudflare/workers-types` for D1Database types — make sure tsconfig includes them.
+1. The primary UI is Vietnamese with proper diacritics.
+2. The main flow is a four-step wizard: decide → storyboard → prompts → save.
+3. Pack deletion requires explicit confirmation.
+4. Users may generate an initial idea instead of supplying one manually.
+5. Do not collapse the staged workflow back into a one-shot generation flow without an explicit product decision.
+
+## Configuration
+
+Runtime credentials must come from Cloudflare secrets/configuration and must never be committed to the repository. The application currently expects provider configuration for its text-generation and image-generation workflow steps.
+
+## Development notes
+
+- Cloudflare Worker entry point: `src/index.ts`
+- UI: `src/ui.ts`
+- D1 schema/data access: `src/db/`
+- Agent/workflow logic: `src/agents/`
+- Shared helpers: `src/lib/`
+- Local D1 initialization: `npm run db:init`
+- Remote deployment: `npm run deploy`
+
+Keep media/content source assets outside this repository unless they are explicitly intended to be versioned and redistribution rights are clear.
