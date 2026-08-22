@@ -3,6 +3,8 @@ export interface Env {
   DEEPSEEK_API_KEY: string;
   GEMINI_API_KEY: string;
   N8N_SECRET?: string;
+  ADMIN_USERNAME?: string;
+  ADMIN_PASSWORD?: string;
 }
 
 export interface ScoutBrief {
