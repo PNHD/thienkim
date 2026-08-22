@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import type { Env } from './types';
 import { runScoutAgent, stepDecide, stepStoryboard, stepBuildPrompts } from './agents/scout';
 import { dashboardHTML } from './ui';
@@ -10,7 +9,56 @@ import { savePack, saveShots, saveAgentLogs, getPack, getShots, listPacks, updat
 type HonoEnv = { Bindings: Env };
 const app = new Hono<HonoEnv>();
 
-app.use('*', cors());
+async function timingSafeEqualString(provided: string, expected: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const [providedHash, expectedHash] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(provided)),
+    crypto.subtle.digest('SHA-256', encoder.encode(expected)),
+  ]);
+  return crypto.subtle.timingSafeEqual(providedHash, expectedHash);
+}
+
+function parseBasicAuthorization(header: string | undefined): { username: string; password: string } | null {
+  if (!header?.startsWith('Basic ')) return null;
+  try {
+    const decoded = atob(header.slice('Basic '.length));
+    const separator = decoded.indexOf(':');
+    if (separator < 0) return null;
+    return { username: decoded.slice(0, separator), password: decoded.slice(separator + 1) };
+  } catch {
+    return null;
+  }
+}
+
+// Protect the dashboard and every normal API endpoint at the Worker boundary.
+// The health check stays public; the legacy n8n callback keeps its dedicated
+// X-N8N-Secret authentication below. Missing admin secrets fail closed.
+app.use('*', async (c, next) => {
+  const path = new URL(c.req.url).pathname;
+  if (path === '/api/health' || path === '/api/n8n/callback') {
+    await next();
+    return;
+  }
+
+  const expectedUsername = c.env.ADMIN_USERNAME;
+  const expectedPassword = c.env.ADMIN_PASSWORD;
+  if (!expectedUsername || !expectedPassword) {
+    return c.json({ error: 'admin_auth_not_configured' }, 503);
+  }
+
+  const credentials = parseBasicAuthorization(c.req.header('Authorization'));
+  const [usernameOk, passwordOk] = await Promise.all([
+    timingSafeEqualString(credentials?.username ?? '', expectedUsername),
+    timingSafeEqualString(credentials?.password ?? '', expectedPassword),
+  ]);
+
+  if (!credentials || !usernameOk || !passwordOk) {
+    c.header('WWW-Authenticate', 'Basic realm="Thien Kim Pipeline", charset="UTF-8"');
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+
+  await next();
+});
 
 // Dashboard UI
 app.get('/', (c) => {
@@ -113,7 +161,6 @@ app.post('/api/scout', async (c) => {
   try {
     const result = await runScoutAgent(brief, c.env);
 
-    // Save to D1
     await savePack(c.env.DB, result.pack);
     await saveShots(c.env.DB, result.shots);
     await saveAgentLogs(c.env.DB, result.pack.pack_id, result.logs);
@@ -186,7 +233,6 @@ app.post('/api/image/:packId', async (c) => {
 
     const { results, allPassed } = await runImageAgent(packId, shots, c.env, body.config);
 
-    // Save results to D1
     const allLogs: any[] = [];
     for (const r of results) {
       await updateShotImage(
@@ -221,7 +267,6 @@ app.post('/api/image/:packId', async (c) => {
 });
 
 // ── Manual Video Upload (RunningHub) ──
-// POST body: { shots: [{ shot_number: 1, video_url: "https://..." }, ...] }
 app.post('/api/video/:packId', async (c) => {
   const packId = c.req.param('packId');
   const pack = await getPack(c.env.DB, packId);
@@ -237,7 +282,6 @@ app.post('/api/video/:packId', async (c) => {
     results.push({ shot_number: entry.shot_number, ok: true });
   }
 
-  // Check if all shots now have video
   const allShots = (await getShots(c.env.DB, packId)).results as any[];
   const allHaveVideo = allShots.every((s: any) => s.video_url);
   await updatePackStatus(c.env.DB, packId, allHaveVideo ? 'videos_ready' : 'videos_partial');
@@ -274,7 +318,6 @@ app.post('/api/publish/:packId', async (c) => {
 });
 
 // ── Auto pipeline: Scout → Image → (pause for manual video) ──
-// After this, user uploads videos via POST /api/video/:packId, then calls POST /api/publish/:packId
 app.post('/api/pipeline', async (c) => {
   const body = await c.req.json();
   const brief = {
@@ -291,7 +334,6 @@ app.post('/api/pipeline', async (c) => {
 
   const steps: string[] = [];
   try {
-    // 1. Scout
     const scoutResult = await runScoutAgent(brief, c.env);
     await savePack(c.env.DB, scoutResult.pack);
     await saveShots(c.env.DB, scoutResult.shots);
@@ -300,7 +342,6 @@ app.post('/api/pipeline', async (c) => {
 
     const packId = scoutResult.pack.pack_id;
 
-    // 2. Image
     if (!body.skip_image) {
       await updatePackStatus(c.env.DB, packId, 'generating_images');
       const imgResult = await runImageAgent(packId, scoutResult.shots, c.env, body.image_config);
@@ -313,7 +354,6 @@ app.post('/api/pipeline', async (c) => {
       steps.push('image');
     }
 
-    // Pipeline pauses here — video is manual via RunningHub
     await updatePackStatus(c.env.DB, packId, 'awaiting_video');
 
     const finalPack = await getPack(c.env.DB, packId);
@@ -352,22 +392,7 @@ app.post('/api/generate-idea', async (c) => {
   try {
     const { callDeepSeek } = await import('./lib/llm');
     const res = await callDeepSeek(c.env.DEEPSEEK_API_KEY, [
-      { role: 'user', content: `Bạn là creative director cho Thiên Kim — một nhà sáng tạo nội dung thời trang/lifestyle người Việt ở Sài Gòn.
-
-Hãy đề xuất MỘT ý tưởng video OOTD/fashion ngắn (15-30 giây) cho TikTok/Reels.
-
-Thông tin:
-- Niche: ${niche || 'thời trang đường phố / casual'}
-- Mood: ${mood || 'tự nhiên, thoải mái'}
-- Thị trường: ${country || 'VN'}
-
-Trả về JSON (không markdown):
-{
-  "notes": "mô tả ý tưởng chi tiết bằng tiếng Anh (2-3 câu, đủ cụ thể để tạo storyboard)",
-  "niche": "niche ngắn gọn bằng tiếng Anh",
-  "mood": "mood ngắn gọn bằng tiếng Anh",
-  "title_vi": "tên ý tưởng ngắn bằng tiếng Việt có dấu"
-}` },
+      { role: 'user', content: `Bạn là creative director cho Thiên Kim — một nhà sáng tạo nội dung thời trang/lifestyle người Việt ở Sài Gòn.\n\nHãy đề xuất MỘT ý tưởng video OOTD/fashion ngắn (15-30 giây) cho TikTok/Reels.\n\nThông tin:\n- Niche: ${niche || 'thời trang đường phố / casual'}\n- Mood: ${mood || 'tự nhiên, thoải mái'}\n- Thị trường: ${country || 'VN'}\n\nTrả về JSON (không markdown):\n{\n  "notes": "mô tả ý tưởng chi tiết bằng tiếng Anh (2-3 câu, đủ cụ thể để tạo storyboard)",\n  "niche": "niche ngắn gọn bằng tiếng Anh",\n  "mood": "mood ngắn gọn bằng tiếng Anh",\n  "title_vi": "tên ý tưởng ngắn bằng tiếng Việt có dấu"\n}` },
     ], { temperature: 0.9 });
     const { extractJSON } = await import('./lib/llm');
     const idea = extractJSON<{ notes: string; niche: string; mood: string; title_vi: string }>(res.text);
@@ -379,8 +404,10 @@ Trả về JSON (không markdown):
 
 // ── Legacy n8n callback (backwards compat) ──
 app.post('/api/n8n/callback', async (c) => {
-  const secret = c.req.header('X-N8N-Secret');
-  if (secret !== c.env.N8N_SECRET) return c.json({ error: 'unauthorized' }, 401);
+  const secret = c.req.header('X-N8N-Secret') ?? '';
+  if (!c.env.N8N_SECRET || !(await timingSafeEqualString(secret, c.env.N8N_SECRET))) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
   const body = await c.req.json();
   if (body.type === 'storyboard_complete' && body.pack_row && body.shot_rows) {
     await savePack(c.env.DB, body.pack_row);
