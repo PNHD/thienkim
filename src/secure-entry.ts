@@ -21,10 +21,9 @@ function sameString(left: string, right: string): boolean {
   return difference === 0;
 }
 
-function unauthorized(c: Context<AppEnv>) {
-  return c.text('Authentication required', 401, {
-    'WWW-Authenticate': 'Basic realm="Thien Kim Pipeline", charset="UTF-8"',
-  });
+function unauthorized(c: Context<AppEnv>, realm = 'Thien Kim Pipeline') {
+  c.header('WWW-Authenticate', `Basic realm="${realm}", charset="UTF-8"`);
+  return c.text('Authentication required', 401);
 }
 
 // The pipeline is an internal product and its routes can spend provider credits,
@@ -32,7 +31,25 @@ function unauthorized(c: Context<AppEnv>) {
 // absent and require HTTP Basic authentication before the existing Hono app is
 // reached. Browser sessions then authenticate both the dashboard and same-origin
 // API calls without placing credentials in application JavaScript.
+//
+// The legacy n8n callback keeps its machine-to-machine X-N8N-Secret contract,
+// but is checked here first so an unset N8N_SECRET can never become a fail-open
+// comparison in the legacy route.
 secureApp.use('*', async (c, next) => {
+  if (c.req.path === '/api/n8n/callback') {
+    const expectedSecret = c.env.N8N_SECRET;
+    const providedSecret = c.req.header('X-N8N-Secret');
+    if (
+      !expectedSecret ||
+      !providedSecret ||
+      !sameString(providedSecret, expectedSecret)
+    ) {
+      return c.json({ error: 'unauthorized' }, 401);
+    }
+    await next();
+    return;
+  }
+
   const expectedUsername = c.env.ADMIN_USERNAME;
   const expectedPassword = c.env.ADMIN_PASSWORD;
 
