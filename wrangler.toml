@@ -1,5 +1,5 @@
 name = "thienkim"
-main = "src/index.ts"
+main = "src/secure-entry.ts"
 compatibility_date = "2025-06-01"
 
 [vars]
