@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import app from './index';
 import type { Env } from './types';
 
@@ -21,7 +21,7 @@ function sameString(left: string, right: string): boolean {
   return difference === 0;
 }
 
-function unauthorized(c: Parameters<Parameters<typeof secureApp.use>[1]>[0]) {
+function unauthorized(c: Context<AppEnv>) {
   return c.text('Authentication required', 401, {
     'WWW-Authenticate': 'Basic realm="Thien Kim Pipeline", charset="UTF-8"',
   });
