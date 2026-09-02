@@ -34,6 +34,15 @@ Initialize the local D1 schema with:
 npm run db:init
 ```
 
+The deployed Worker is an internal tool and fails closed unless HTTP Basic Auth credentials are configured as Wrangler secrets:
+
+```bash
+wrangler secret put ADMIN_USERNAME
+wrangler secret put ADMIN_PASSWORD
+```
+
+Use a unique, high-entropy password. Do not add either credential to `wrangler.toml`, `.dev.vars`, or source control. For local development, provide equivalent values through an ignored local environment file or Wrangler's local secret mechanism.
+
 Deployment uses Wrangler:
 
 ```bash
@@ -42,7 +51,8 @@ npm run deploy
 
 ## Repository structure
 
-- `src/index.ts` — Worker routes and application entry point
+- `src/secure-entry.ts` — deployment entry point and internal-tool authentication gate
+- `src/index.ts` — Worker routes and application entry point behind the gate
 - `src/ui.ts` — server-rendered product UI
 - `src/agents/` — content-generation workflow logic
 - `src/db/` — D1 schema/data access
